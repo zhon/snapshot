@@ -1,26 +1,33 @@
 defmodule Backup.Scanner do
-  def scan(dir) do
+  def scan(root) do
     Stream.resource(
-      fn -> [dir] end,
-      fn
-        [] ->
-          {:halt, []}
-
-        [path | rest] ->
-          cond do
-            File.dir?(path) ->
-              {:ok, items} = File.ls(path)
-              children = Enum.map(items, &Path.join(path, &1))
-              {[], children ++ rest}
-
-            File.regular?(path) ->
-              {[path], rest}
-
-            true ->
-              {[], rest}
-          end
-      end,
+      fn -> [root] end,
+      &step/1,
       fn _ -> :ok end
     )
+  end
+
+  defp step([]), do: {:halt, []}
+
+  defp step([path | rest]) do
+    case File.lstat(path) do
+      {:ok, %File.Stat{type: :directory}} ->
+        case File.ls(path) do
+          {:ok, items} ->
+            children =
+              Enum.map(items, &Path.join(path, &1))
+
+            {[], children ++ rest}
+
+          {:error, _} ->
+            {[], rest}
+        end
+
+      {:ok, %File.Stat{type: :regular}} ->
+        {[path], rest}
+
+      _ ->
+        {[], rest}
+    end
   end
 end
