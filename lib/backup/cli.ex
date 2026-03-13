@@ -2,7 +2,7 @@ defmodule Backup.CLI do
   alias Backup.{Runner, Util}
 
   def main(argv) do
-    {opts, args, _} =
+    {opts, args, invalid} =
       OptionParser.parse(argv,
         switches: [
           workers: :integer,
@@ -14,13 +14,24 @@ defmodule Backup.CLI do
         aliases: [w: :workers, h: :help]
       )
 
-    if opts[:help], do: usage()
+    if opts[:help] do
+      usage()
+      System.halt(0)
+    end
 
-    workers = opts[:workers] || 4
-    retries = opts[:retries] || 2
+    if invalid != [] do
+      Util.error("Unknown options: #{inspect(invalid)}")
+      usage()
+    end
+
+    workers = max(opts[:workers] || 4, 1)
+    retries = max(opts[:retries] || 2, 0)
 
     case args do
       [src, dst] ->
+        src = Path.expand(src)
+        dst = Path.expand(dst)
+
         Runner.run(src, dst, workers, retries, opts)
 
       _ ->
