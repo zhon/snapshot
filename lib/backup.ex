@@ -7,28 +7,20 @@ defmodule Backup.Runner do
 
       Util.info("Scanning files...")
 
-      batches =
-        src
-        |> Scanner.scan()
-        |> Stream.chunk_every(200)
-        |> Enum.to_list()
-
-      Util.warn("#{length(batches)} batches detected")
-
-      Task.async_stream(
-        batches,
+      src
+      |> Scanner.scan()
+      |> Stream.chunk_every(200)
+      |> Task.async_stream(
         fn batch ->
           Retry.attempt(fn ->
             Rsync.sync_batch(batch, src, dst, opts)
           end, retries)
         end,
         max_concurrency: workers,
-        timeout: :infinity
+        timeout: :infinity,
+        ordered: false
       )
-      |> Enum.each(fn
-        {:ok, _} -> :ok
-        {:exit, r} -> Util.error("Worker crash #{inspect(r)}")
-      end)
+      |> Stream.run()
 
       Util.success("✔ all sync jobs finished")
     else
