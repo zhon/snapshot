@@ -24,7 +24,7 @@ defmodule Backup.CLI do
       usage()
     end
 
-    workers = max(opts[:workers] || 4, 1)
+    workers = max(opts[:workers] || 11, 1)
     retries = max(opts[:retries] || 2, 0)
 
     case args do
