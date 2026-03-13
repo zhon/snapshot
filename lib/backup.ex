@@ -20,6 +20,11 @@ defmodule Backup.Runner do
         timeout: :infinity,
         ordered: false
       )
+      |> Stream.each(fn
+        {:ok, _} -> :ok
+        {:exit, reason} ->
+          Util.error("Worker crash: #{inspect(reason)}")
+      end)
       |> Stream.run()
 
       Util.success("✔ all sync jobs finished")
