@@ -9,34 +9,30 @@ defmodule Backup.Rsync do
       raise "rsync not found in PATH"
     end
 
-    tmp = Path.join(System.tmp_dir!(), "rsync_batch_#{:erlang.unique_integer()}")
+    args =
+      flags(opts) ++
+        ["--files-from=-", src, dst]
 
-    try do
+    port =
+      Port.open({:spawn_executable, exe}, [
+        :binary,
+        :exit_status,
+        :use_stdio,
+        :stderr_to_stdout,
+        :eof,
+        args: args
+      ])
 
-      File.open!(tmp, [:write], fn f ->
-        Enum.each(files, fn file ->
-          IO.write(f, Path.relative_to(file, src))
-          IO.write(f, "\n")
-        end)
-      end)
+    send_file_list(port, files, src)
 
-      args =
-        flags(opts) ++
-          ["--files-from=#{tmp}", src, dst]
+    progress_loop(port, "")
+  end
 
-      port =
-        Port.open({:spawn_executable, exe}, [
-          :binary,
-          :exit_status,
-          :use_stdio,
-          :stderr_to_stdout,
-          args: args,
-        ])
+  defp send_file_list(port, files, src) do
+    data =
+      Enum.map_join(files, "\n", &Path.relative_to(&1, src)) <> "\n"
 
-      progress_loop(port, "")
-    after
-      File.rm(tmp)
-    end
+    Port.command(port, data)
   end
 
   #do I need these they can cause lots of trouble
