@@ -5,7 +5,6 @@ defmodule Backup.Rsync do
   def sync_batch(files, src, dst, opts) do
     exe = System.find_executable("rsync")
 
-    Util.info(files)
     if exe == nil do
       raise "rsync not found in PATH"
     end
@@ -13,10 +12,13 @@ defmodule Backup.Rsync do
     tmp = Path.join(System.tmp_dir!(), "rsync_batch_#{:erlang.unique_integer()}")
 
     try do
-      File.write!(
-        tmp,
-        Enum.map_join(files, "\n", &Path.relative_to(&1, src))
-      )
+
+      File.open!(tmp, [:write], fn f ->
+        Enum.each(files, fn file ->
+          IO.write(f, Path.relative_to(file, src))
+          IO.write(f, "\n")
+        end)
+      end)
 
       args =
         flags(opts) ++
