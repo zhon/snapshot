@@ -26,7 +26,7 @@ defmodule Backup.Scanner do
   end
 
   defp step([{dir, [name | remaining]} | rest]) do
-    path = dir <> "/" <> name
+    path = Path.join(dir, name)
 
     case File.lstat(path) do
       {:ok, %File.Stat{type: :directory}} ->
