@@ -14,8 +14,4 @@ defmodule ScannerTest do
     assert Enum.any?(files, &String.contains?(&1, "file.txt"))
   end
 
-  test 'weird' do
-
-    fail
-  end
 end

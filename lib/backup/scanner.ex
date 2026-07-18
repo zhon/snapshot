@@ -1,4 +1,6 @@
 defmodule Backup.Scanner do
+  alias Backup.{Util}
+
   def scan(root) do
     Stream.resource(
       fn -> init(root) end,
@@ -11,9 +13,9 @@ defmodule Backup.Scanner do
     case File.ls(root) do
       {:ok, entries} ->
         [{root, entries}]
-
-      _ ->
-        []
+      {:error, reason} ->
+        Util.warn("Could not list #{root}: #{inspect(reason)}")
+        [{dir, remaining} | rest]
     end
   end
 
@@ -35,7 +37,8 @@ defmodule Backup.Scanner do
             {:ok, children} ->
               [{path, children}, {dir, remaining} | rest]
 
-            _ ->
+            {:error, reason} ->
+              Util.warn("Could not list #{path}: #{inspect(reason)}")
               [{dir, remaining} | rest]
           end
 
@@ -43,6 +46,10 @@ defmodule Backup.Scanner do
 
       {:ok, %File.Stat{type: :regular}} ->
         {[path], [{dir, remaining} | rest]}
+
+      {:error, reason} ->
+        Util.warn("Could not stat #{path}: #{inspect(reason)}")
+        {[], [{dir, remaining} | rest]}
 
       _ ->
         {[], [{dir, remaining} | rest]}
