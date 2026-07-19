@@ -15,7 +15,7 @@ defmodule Backup.Scanner do
         [{root, entries}]
       {:error, reason} ->
         Util.warn("Could not list #{root}: #{inspect(reason)}")
-        [{dir, remaining} | rest]
+        []
     end
   end
 
