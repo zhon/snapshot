@@ -50,16 +50,34 @@ defmodule Backup.RsyncWorker do
 
   # Send a batch of files (NUL-separated)
   def send_batch(port, files, src) do
-    # Only send regular files
-    files =
-      Enum.filter(files, &File.regular?/1)
+    data =
+      Enum.map_join(files, <<0>>, &Path.relative_to(&1, src)) <>
+        <<0>>
+    case Port.command(port, data) do
+      true ->
+        :ok
 
-    if files != [] do
-      data = Enum.map_join(files, <<0>>, &Path.relative_to(&1, src)) <> <<0>>
-      Port.command(port, data)
+      false ->
+        Util.error("Failed sending batch to rsync")
     end
   end
 
+def finish(port) do
+  Port.command(port, "")
+
+  receive do
+    {^port, {:exit_status, 0}} ->
+      :ok
+
+    {^port, {:exit_status, code}} ->
+      Util.error("rsync failed with code #{code}")
+  after
+    300_000 ->
+      Util.error("rsync timeout")
+  end
+
+  Port.close(port)
+end
   # Finish worker
   def finish(port) do
     Port.command(port, "")  # signal EOF
