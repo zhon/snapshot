@@ -73,6 +73,38 @@ defmodule Backup.IntegrationTest do
     assert {:error, _} = RsyncWorker.start(src, dst, rsync_path: "/usr/bin/rsync")
   end
 
+  # The reason `--delete` was removed from the flag list. With `--files-from`
+  # (how this tool streams batches) rsync ignores `--delete` entirely, so the
+  # flag reported a cleanup that never happened. Proven here by contrast: the
+  # same tree synced the way this tool syncs, then with a plain recursive
+  # rsync.
+  @tag :integration
+  test "rsync --delete is a no-op with --files-from", %{src: src, dst: dst, exe: exe} do
+    File.mkdir_p!(Path.join(src, "sub"))
+    File.write!(Path.join(src, "sub/gone.txt"), "gone")
+
+    # First sync, so the destination holds the file we later delete.
+    {:ok, worker} = RsyncWorker.start(src, dst, rsync_path: exe)
+    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Backup.Scanner.scan(src)))
+    assert {:ok, 0} = RsyncWorker.finish(worker)
+    assert File.exists?(Path.join(dst, "sub/gone.txt"))
+
+    File.rm!(Path.join(src, "sub/gone.txt"))
+
+    # Sync again. Even asking rsync to delete cannot remove it, because
+    # --files-from is in play.
+    {:ok, worker} = RsyncWorker.start(src, dst, rsync_path: exe, flags: "--delete")
+    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Backup.Scanner.scan(src)))
+    assert {:ok, 0} = RsyncWorker.finish(worker)
+
+    assert File.exists?(Path.join(dst, "sub/gone.txt")),
+           "expected --delete to be ignored; if this now fails, rsync changed and --delete may work"
+
+    # Contrast: a plain recursive rsync -a --delete does remove it.
+    {_, 0} = System.shell(~s("#{exe}" -a --delete "#{src}/" "#{dst}/" </dev/null))
+    refute File.exists?(Path.join(dst, "sub/gone.txt"))
+  end
+
   # A stub that passes the version probe but fails the transfer, so we can
   # assert exit-code propagation without corrupting anything real.
   defp write_failing_rsync(_src, dst) do

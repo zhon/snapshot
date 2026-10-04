@@ -5,7 +5,7 @@ defmodule Backup.Rsync do
 
   @base ["-a", "-R", "--human-readable", "--info=progress2", "--partial"]
 
-  @bools [{"--dry-run", :dry_run}, {"--delete", :delete}]
+  @bools [{"--dry-run", :dry_run}]
 
   @doc """
   Verifies the rsync we are about to shell out to is a real rsync.
@@ -75,6 +75,14 @@ defmodule Backup.Rsync do
 
   Boolean flags are only added when truthy; `:flags` is an optional raw string
   of extra flags; `:exclude` defaults to `.DS_Store`.
+
+  `--delete` is deliberately NOT passed through. Combined with `--files-from`
+  it is a silent no-op, so it gave false confidence without deleting anything.
+  Verified: deleting a file from the source and syncing with `--delete` left
+  that file in the destination, while a plain recursive `rsync -a --delete`
+  (no `--files-from`) removed it. Removing the flag changes no behavior — it
+  stops implying a cleanup that was never happening. Destination pruning is
+  not implemented.
   """
   def flags(opts) do
     booleans = Enum.filter(@bools, fn {_flag, key} -> truthy?(opts[key]) end)

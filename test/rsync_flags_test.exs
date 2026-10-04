@@ -12,23 +12,30 @@ defmodule Backup.RsyncFlagsTest do
     assert "--info=progress2" in flags
   end
 
-  test "adds boolean flags" do
-    flags = Rsync.flags(delete: true, dry_run: true)
+  test "adds dry-run" do
+    flags = Rsync.flags(dry_run: true)
 
-    assert "--delete" in flags
     assert "--dry-run" in flags
   end
 
-  test "does not add boolean flags when false or missing" do
-    flags = Rsync.flags(delete: false)
+  # `--delete` is a silent no-op when combined with `--files-from`, which is
+  # how this tool streams batches. It must never reach rsync: it reads as
+  # "stale files are removed" while removing nothing. See the integration test
+  # "rsync --delete is a no-op with --files-from" for the proof.
+  test "never passes --delete through to rsync" do
+    refute "--delete" in Rsync.flags(delete: true)
+  end
 
-    refute "--delete" in flags
+  test "does not add boolean flags when false or missing" do
+    flags = Rsync.flags(dry_run: false)
+
+    refute "--dry-run" in flags
   end
 
   # Regression: the old `maybe/3` had no clause for `false`, so an explicit
   # false raised FunctionClauseError and crashed the run.
   test "explicit false does not raise" do
-    assert is_list(Rsync.flags(delete: false, dry_run: false))
+    assert is_list(Rsync.flags(dry_run: false))
   end
 
   test "adds extra flags from a string" do
@@ -45,9 +52,9 @@ defmodule Backup.RsyncFlagsTest do
   end
 
   test "removes duplicates" do
-    flags = Rsync.flags(flags: "--delete", delete: true)
+    flags = Rsync.flags(flags: "--size-only --size-only", dry_run: true)
 
-    assert Enum.count(flags, &(&1 == "--delete")) == 1
+    assert Enum.count(flags, &(&1 == "--size-only")) == 1
   end
 
   test "excludes default to .DS_Store" do
