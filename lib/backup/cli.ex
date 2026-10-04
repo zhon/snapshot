@@ -9,9 +9,12 @@ defmodule Backup.CLI do
           retries: :integer,
           dry_run: :boolean,
           delete: :boolean,
+          exclude: :keep,
+          flags: :string,
+          rsync_path: :string,
           help: :boolean
         ],
-        aliases: [w: :workers, h: :help]
+        aliases: [w: :workers, h: :help, n: :dry_run]
       )
 
     if opts[:help] do
@@ -40,14 +43,17 @@ defmodule Backup.CLI do
   end
 
   defp usage do
-    IO.puts("""
+      IO.puts("""
     backup <src> <dst> [options]
 
-      -w --workers N
-      --retries N
-      --dry-run
-      --delete
-      -h --help
+          -w --workers N     parallel rsync workers (default 11)
+          --retries N        retries per batch (default 2)
+          -n --dry-run       pass --dry-run to rsync
+          --delete           pass --delete to rsync
+          --exclude PATTERN  repeatable; defaults to .DS_Store
+          --flags "..."      extra raw rsync flags
+          --rsync-path PATH  explicit rsync binary (must be rsync 3.x)
+          -h --help
     """)
 
     System.halt(1)

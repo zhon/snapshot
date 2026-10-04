@@ -12,6 +12,12 @@ defmodule Backup.MixProject do
     ]
   end
 
+  def cli do
+    [
+      default_task: "escript.build",
+    ]
+  end
+
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
