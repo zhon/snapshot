@@ -1,7 +1,7 @@
 defmodule RetryTest do
   use ExUnit.Case, async: true
 
-  alias Backup.Retry
+  alias Snapshot.Retry
 
   test "returns the function's value on success" do
     assert Retry.attempt(fn -> :ok end, 2) == :ok

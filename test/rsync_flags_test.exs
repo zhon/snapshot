@@ -1,7 +1,7 @@
-defmodule Backup.RsyncFlagsTest do
+defmodule Snapshot.RsyncFlagsTest do
   use ExUnit.Case, async: true
 
-  alias Backup.Rsync
+  alias Snapshot.Rsync
 
   test "returns base flags with no options" do
     flags = Rsync.flags([])

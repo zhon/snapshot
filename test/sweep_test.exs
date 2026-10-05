@@ -1,4 +1,4 @@
-defmodule Backup.SweepTest do
+defmodule Snapshot.SweepTest do
   @moduledoc """
   Sweep removes destination entries that are no longer in the source, but only
   when it is certain which those are.
@@ -10,11 +10,11 @@ defmodule Backup.SweepTest do
   """
   use ExUnit.Case, async: false
 
-  alias Backup.Sweep
+  alias Snapshot.Sweep
 
   @rsync Enum.find(
             ["/opt/homebrew/bin/rsync", "/usr/local/bin/rsync"],
-            &match?({:ok, v} when v >= 3, Backup.Rsync.version(&1))
+            &match?({:ok, v} when v >= 3, Snapshot.Rsync.version(&1))
           )
 
   setup do

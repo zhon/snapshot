@@ -1,12 +1,12 @@
-defmodule Backup.MixProject do
+defmodule Snapshot.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :backup,
+      app: :snapshot,
       version: "0.1.0",
       elixir: "~> 1.19",
-      escript: [main_module: Backup.CLI],
+      escript: [main_module: Snapshot.CLI],
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]

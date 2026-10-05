@@ -1,13 +1,13 @@
-defmodule Backup.Runner do
+defmodule Snapshot.Runner do
   @moduledoc """
   Scans a source tree and distributes batches across persistent rsync workers.
 
   Progress is reported per *file*, and a failure in any batch fails the whole
-  run with a non-zero exit code. A backup that reports success while silently
+  run with a non-zero exit code. A snapshot that reports success while silently
   dropping files is worse than one that fails loudly.
   """
 
-  alias Backup.{Sweep, Scanner, RsyncWorker, Retry, Util}
+  alias Snapshot.{Sweep, Scanner, RsyncWorker, Retry, Util}
 
   @batch_size 200
 
@@ -60,7 +60,7 @@ defmodule Backup.Runner do
   defp truthy?(nil), do: false
   defp truthy?(_), do: true
 
-  # A failed sweep is not a failed backup: the sync itself succeeded and every
+  # A failed sweep is not a failed run: the sync itself succeeded and every
   # file is at the destination. The only thing not done is the cleanup, so this
   # warns rather than halting with a non-zero code.
   defp sweep(src, dst, opts) do

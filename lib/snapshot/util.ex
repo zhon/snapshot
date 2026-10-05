@@ -1,4 +1,4 @@
-defmodule Backup.Util do
+defmodule Snapshot.Util do
   @green IO.ANSI.green()
   @red IO.ANSI.red()
   @yellow IO.ANSI.yellow()

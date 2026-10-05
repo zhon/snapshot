@@ -1,7 +1,7 @@
-defmodule Backup.RsyncTest do
+defmodule Snapshot.RsyncTest do
   use ExUnit.Case, async: true
 
-  alias Backup.Rsync
+  alias Snapshot.Rsync
 
   # macOS ships openrsync, which this tool must refuse.
   test "rejects openrsync" do

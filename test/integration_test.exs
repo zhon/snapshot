@@ -1,4 +1,4 @@
-defmodule Backup.IntegrationTest do
+defmodule Snapshot.IntegrationTest do
   @moduledoc """
   End-to-end coverage for the worker/runner wiring — the modules where the
   real bugs lived. Skipped when no real rsync 3.x is available, since macOS
@@ -7,7 +7,7 @@ defmodule Backup.IntegrationTest do
 
   use ExUnit.Case, async: false
 
-  alias Backup.RsyncWorker
+  alias Snapshot.RsyncWorker
 
   setup_all do
     case real_rsync() do
@@ -32,7 +32,7 @@ defmodule Backup.IntegrationTest do
     File.write!(Path.join(src, "top.txt"), "top")
     File.write!(Path.join(src, "a/b/deep.txt"), "deep")
 
-    files = Enum.to_list(Backup.Scanner.scan(src))
+    files = Enum.to_list(Snapshot.Scanner.scan(src))
     assert length(files) == 2
 
     {:ok, worker} = RsyncWorker.start(src, dst, rsync_path: exe)
@@ -50,7 +50,7 @@ defmodule Backup.IntegrationTest do
     File.write!(Path.join(src, "one.txt"), "one")
 
     {:ok, worker} = RsyncWorker.start(src, dst, rsync_path: exe)
-    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Backup.Scanner.scan(src)))
+    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Snapshot.Scanner.scan(src)))
 
     task = Task.async(fn -> RsyncWorker.finish(worker) end)
 
@@ -63,7 +63,7 @@ defmodule Backup.IntegrationTest do
     fake = write_failing_rsync(src, dst)
 
     {:ok, worker} = RsyncWorker.start(src, dst, rsync_path: fake)
-    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Backup.Scanner.scan(src)))
+    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Snapshot.Scanner.scan(src)))
 
     assert {:ok, 23} = RsyncWorker.finish(worker)
   end
@@ -85,7 +85,7 @@ defmodule Backup.IntegrationTest do
 
     # First sync, so the destination holds the file we later delete.
     {:ok, worker} = RsyncWorker.start(src, dst, rsync_path: exe)
-    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Backup.Scanner.scan(src)))
+    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Snapshot.Scanner.scan(src)))
     assert {:ok, 0} = RsyncWorker.finish(worker)
     assert File.exists?(Path.join(dst, "sub/gone.txt"))
 
@@ -94,7 +94,7 @@ defmodule Backup.IntegrationTest do
     # Sync again. Even asking rsync to delete cannot remove it, because
     # --files-from is in play.
     {:ok, worker} = RsyncWorker.start(src, dst, rsync_path: exe, flags: "--delete")
-    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Backup.Scanner.scan(src)))
+    :ok = RsyncWorker.send_batch(worker, Enum.to_list(Snapshot.Scanner.scan(src)))
     assert {:ok, 0} = RsyncWorker.finish(worker)
 
     assert File.exists?(Path.join(dst, "sub/gone.txt")),
@@ -133,7 +133,7 @@ defmodule Backup.IntegrationTest do
   end
 
   defp version(path) do
-    if File.exists?(path), do: Backup.Rsync.version(path), else: {:error, :missing}
+    if File.exists?(path), do: Snapshot.Rsync.version(path), else: {:error, :missing}
   rescue
     _ -> {:error, :error}
   end

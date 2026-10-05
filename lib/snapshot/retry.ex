@@ -1,4 +1,4 @@
-defmodule Backup.Retry do
+defmodule Snapshot.Retry do
   @moduledoc """
   Runs a function, retrying on failure.
 
@@ -7,7 +7,7 @@ defmodule Backup.Retry do
   "all sync jobs finished" and exit 0 after dropping files.
   """
 
-  alias Backup.Util
+  alias Snapshot.Util
 
   @doc """
   Calls `fun`, retrying up to `retries` times.

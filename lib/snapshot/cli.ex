@@ -1,5 +1,5 @@
-defmodule Backup.CLI do
-  alias Backup.{Runner, Util}
+defmodule Snapshot.CLI do
+  alias Snapshot.{Runner, Util}
 
   def main(argv) do
     {opts, args, invalid} =
@@ -44,7 +44,7 @@ defmodule Backup.CLI do
 
   defp usage do
       IO.puts("""
-    backup <src> <dst> [options]
+    snapshot <src> <dst> [options]
 
           -w --workers N     parallel rsync workers (default 11)
           --retries N        retries per batch (default 2)

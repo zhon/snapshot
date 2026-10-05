@@ -1,6 +1,6 @@
 defmodule ScannerTest do
   use ExUnit.Case
-  alias Backup.Scanner
+  alias Snapshot.Scanner
 
   setup do
     root = Briefly.create!(directory: true)
@@ -16,7 +16,7 @@ defmodule ScannerTest do
     movie = Path.join(dir, "Timelapse2.mov")
     File.write!(movie, "contents")
 
-    assert movie in Enum.to_list(Backup.Scanner.scan(root))
+    assert movie in Enum.to_list(Snapshot.Scanner.scan(root))
   end
 
   defp reference_scan(dir) do
@@ -49,7 +49,7 @@ defmodule ScannerTest do
       File.write!(Path.join(root, "file#{i}.txt"), "")
     end
 
-    assert Enum.sort(Backup.Scanner.scan(root) |> Enum.to_list()) ==
+    assert Enum.sort(Snapshot.Scanner.scan(root) |> Enum.to_list()) ==
       Enum.sort(reference_scan(root))
 
     files_sent =
@@ -70,7 +70,7 @@ defmodule ScannerTest do
       File.write!(Path.join(root, "file#{i}.txt"), "")
     end
 
-    files = Enum.to_list(Backup.Scanner.scan(root))
+    files = Enum.to_list(Snapshot.Scanner.scan(root))
 
     assert length(files) == 500
   end
@@ -90,7 +90,7 @@ defmodule ScannerTest do
       end
 
     assert Enum.sort(expected) ==
-      Enum.sort(Enum.to_list(Backup.Scanner.scan(root)))
+      Enum.sort(Enum.to_list(Snapshot.Scanner.scan(root)))
   end
 
   test "returns an empty stream for an empty directory", %{root: root} do

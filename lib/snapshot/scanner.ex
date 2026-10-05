@@ -1,5 +1,5 @@
-defmodule Backup.Scanner do
-  alias Backup.{Util}
+defmodule Snapshot.Scanner do
+  alias Snapshot.{Util}
 
   def scan(root) do
     Stream.resource(

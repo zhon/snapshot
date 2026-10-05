@@ -1,4 +1,4 @@
-defmodule Backup.RsyncWorker do
+defmodule Snapshot.RsyncWorker do
   @moduledoc """
   A persistent rsync process fed NUL-separated file lists on stdin.
 
@@ -17,7 +17,7 @@ defmodule Backup.RsyncWorker do
       closing stdin.
   """
 
-  alias Backup.Util
+  alias Snapshot.Util
 
   @doc """
   Starts one rsync worker. Returns `{:ok, worker}`.
@@ -26,10 +26,10 @@ defmodule Backup.RsyncWorker do
   file the wrapper writes.
   """
   def start(src, dst, opts) do
-    with {:ok, exe} <- Backup.Rsync.ensure_supported(opts[:rsync_path]),
+    with {:ok, exe} <- Snapshot.Rsync.ensure_supported(opts[:rsync_path]),
          {:ok, tmp_dir} <- make_tmp_dir(),
          {:ok, code_file} <- make_code_file(tmp_dir) do
-      args = Backup.Rsync.flags(opts) ++ ["--files-from=-", "--from0", src, dst]
+      args = Snapshot.Rsync.flags(opts) ++ ["--files-from=-", "--from0", src, dst]
       script = ~s("$1" "${@:2}"; echo $? > #{code_file})
 
       port =
@@ -154,7 +154,7 @@ defmodule Backup.RsyncWorker do
     path =
       Path.join(
         System.tmp_dir!(),
-        "backup-#{System.unique_integer([:positive, :monotonic])}"
+        "snapshot-#{System.unique_integer([:positive, :monotonic])}"
       )
 
     File.mkdir_p(path)

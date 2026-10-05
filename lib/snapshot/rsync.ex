@@ -1,4 +1,4 @@
-defmodule Backup.Rsync do
+defmodule Snapshot.Rsync do
   @moduledoc """
   Builds and validates the rsync command line.
   """

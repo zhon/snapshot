@@ -1,4 +1,4 @@
-defmodule Backup.Sweep do
+defmodule Snapshot.Sweep do
   @moduledoc """
   Removes destination entries that no longer exist in the source, running at the
   end of every successful sync.
@@ -42,7 +42,7 @@ defmodule Backup.Sweep do
   one destination folder is the same data as another.
   """
 
-  alias Backup.Util
+  alias Snapshot.Util
 
   @doc """
   Deletes destination entries rsync reports as absent from the source.
@@ -55,7 +55,7 @@ defmodule Backup.Sweep do
     dst_arg = with_trailing_slash(dst)
     dst_root = Path.expand(dst)
 
-    case Backup.Rsync.ensure_supported(opts[:rsync_path]) do
+    case Snapshot.Rsync.ensure_supported(opts[:rsync_path]) do
       {:ok, exe} ->
         {output, code} = run_dry_run(exe, src, dst_arg, opts)
 
