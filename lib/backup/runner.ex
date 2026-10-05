@@ -7,7 +7,7 @@ defmodule Backup.Runner do
   dropping files is worse than one that fails loudly.
   """
 
-  alias Backup.{Scanner, RsyncWorker, Retry, Util}
+  alias Backup.{Sweep, Scanner, RsyncWorker, Retry, Util}
 
   @batch_size 200
 
@@ -22,6 +22,13 @@ defmodule Backup.Runner do
       codes = Enum.zip_with(results, 1..length(results), &{&1, &2})
 
       print_summary(batch_count, file_count)
+
+      # Sweeping is opt-in. It only runs after a fully successful sync --
+      # deleting after a partial or failed transfer would remove destination
+      # entries whose source copies never arrived.
+      if truthy?(opts[:delete]) and failures == [] and Enum.all?(results, &match?({:ok, 0}, &1)) do
+        sweep(src, dst, opts)
+      end
 
       case failures do
         [] ->
@@ -44,6 +51,39 @@ defmodule Backup.Runner do
       {:error, msg} ->
         Util.error(msg)
         System.halt(6)
+    end
+  end
+
+  # Any value other than false/nil counts as set, matching how Rsync.flags/1
+  # treats its booleans.
+  defp truthy?(false), do: false
+  defp truthy?(nil), do: false
+  defp truthy?(_), do: true
+
+  # A failed sweep is not a failed backup: the sync itself succeeded and every
+  # file is at the destination. The only thing not done is the cleanup, so this
+  # warns rather than halting with a non-zero code.
+  defp sweep(src, dst, opts) do
+    Util.info("Sweeping destination entries that are no longer in the source...")
+    dry_run? = truthy?(opts[:dry_run])
+
+    case Sweep.sweep(src, dst,
+           rsync_path: opts[:rsync_path],
+           dry_run: dry_run?,
+           exclude: opts[:exclude]
+         ) do
+      {:ok, []} ->
+        Util.info("Sweep: nothing to delete")
+
+      {:ok, paths} ->
+        if dry_run? do
+          Util.info("Sweep: would delete #{length(paths)} entries (dry run)")
+        else
+          Util.info("Sweep: deleted #{length(paths)} entries")
+        end
+
+      {:error, reason, _code} ->
+        Util.warn("Sweep skipped (#{inspect(reason)}); destination left as-is")
     end
   end
 

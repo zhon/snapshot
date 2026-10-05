@@ -8,6 +8,7 @@ defmodule Backup.CLI do
           workers: :integer,
           retries: :integer,
           dry_run: :boolean,
+          delete: :boolean,
           exclude: :keep,
           flags: :string,
           rsync_path: :string,
@@ -47,7 +48,11 @@ defmodule Backup.CLI do
 
           -w --workers N     parallel rsync workers (default 11)
           --retries N        retries per batch (default 2)
-          -n --dry-run       pass --dry-run to rsync
+          -n --dry-run       pass --dry-run to rsync; with --delete, preview
+                         deletions without removing anything
+          --delete           after a successful sync, remove destination
+                             files and directories that are no longer in
+                             the source. Off by default.
           --exclude PATTERN  repeatable; defaults to .DS_Store
           --flags "..."      extra raw rsync flags
           --rsync-path PATH  explicit rsync binary (must be rsync 3.x)
