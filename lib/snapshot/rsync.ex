@@ -1,6 +1,17 @@
 defmodule Snapshot.Rsync do
   @moduledoc """
   Builds and validates the rsync command line.
+
+  Relevant rsync exit codes (per `man rsync` "EXIT VALUES"):
+
+  - `0` — success
+  - `23` — partial transfer (some files failed to copy, usually permissions)
+  - `24` — a file vanished from the source during transfer
+  - `25` — the `--max-errors` limit was hit
+
+  This tool treats any non-zero exit as a hard failure for both regular
+  sync batches and the deletion sweep, so that stale state is never
+  silently accepted as a successful snapshot.
   """
 
   @base ["-a", "-R", "--human-readable", "--info=progress2", "--partial"]
@@ -79,10 +90,14 @@ defmodule Snapshot.Rsync do
   `--delete` is deliberately NOT passed through. Combined with `--files-from`
   it is a silent no-op, so it gave false confidence without deleting anything.
   Verified: deleting a file from the source and syncing with `--delete` left
-  that file in the destination, while a plain recursive `rsync -a --delete`
+  that file at the destination, while a plain recursive `rsync -a --delete`
   (no `--files-from`) removed it. Removing the flag changes no behavior — it
   stops implying a cleanup that was never happening. Destination pruning is
-  not implemented.
+  not implemented here; use the `--delete` CLI flag of this tool instead, which
+  runs a separate dedicated rsync invocation (see `Snapshot.Sweep`).
+
+  Note: passing `--delete` via `--flags` will also be stripped by `Enum.uniq/1`,
+  so this is not a supported workaround for the `--files-from` interaction.
   """
   def flags(opts) do
     booleans = Enum.filter(@bools, fn {_flag, key} -> truthy?(opts[key]) end)
