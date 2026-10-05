@@ -10,7 +10,9 @@ defmodule Snapshot.Runner do
   alias Snapshot.{Sweep, Scanner, RsyncWorker, Retry, Util}
 
   @batch_size 200
+  @type opts :: [workers: pos_integer() | nil, retries: non_neg_integer() | nil, dry_run: boolean() | nil, delete: boolean() | nil, exclude: [String.t()] | nil, flags: String.t() | [String.t()] | nil, rsync_path: String.t() | nil]
 
+  @spec run(String.t(), String.t(), pos_integer(), non_neg_integer(), opts()) :: no_return()
   def run(src, dst, workers, retries, opts) do
     with :ok <- Util.check(File.dir?(src), "Source directory missing", 2),
          :ok <- Util.check(File.dir?(dst), "Destination missing", 3),
