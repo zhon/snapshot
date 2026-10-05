@@ -28,7 +28,7 @@ defmodule Snapshot.Runner do
       # Sweeping is opt-in. It only runs after a fully successful sync --
       # deleting after a partial or failed transfer would remove destination
       # entries whose source copies never arrived.
-      if truthy?(opts[:delete]) and failures == [] and Enum.all?(results, &match?({:ok, 0}, &1)) do
+      if Util.truthy(opts[:delete]) and failures == [] and Enum.all?(results, &match?({:ok, 0}, &1)) do
         sweep(src, dst, opts)
       end
 
@@ -56,18 +56,12 @@ defmodule Snapshot.Runner do
     end
   end
 
-  # Any value other than false/nil counts as set, matching how Rsync.flags/1
-  # treats its booleans.
-  defp truthy?(false), do: false
-  defp truthy?(nil), do: false
-  defp truthy?(_), do: true
-
   # A failed sweep is not a failed run: the sync itself succeeded and every
   # file is at the destination. The only thing not done is the cleanup, so this
   # warns rather than halting with a non-zero code.
   defp sweep(src, dst, opts) do
     Util.info("Sweeping destination entries that are no longer in the source...")
-    dry_run? = truthy?(opts[:dry_run])
+    dry_run? = Util.truthy(opts[:dry_run])
 
     case Sweep.sweep(src, dst,
            rsync_path: opts[:rsync_path],

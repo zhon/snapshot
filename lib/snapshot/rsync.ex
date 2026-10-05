@@ -18,6 +18,8 @@ defmodule Snapshot.Rsync do
 
   @bools [{"--dry-run", :dry_run}]
 
+  alias Snapshot.Util
+
   @doc """
   Verifies the rsync we are about to shell out to is a real rsync.
 
@@ -100,7 +102,7 @@ defmodule Snapshot.Rsync do
   so this is not a supported workaround for the `--files-from` interaction.
   """
   def flags(opts) do
-    booleans = Enum.filter(@bools, fn {_flag, key} -> truthy?(opts[key]) end)
+    booleans = Enum.filter(@bools, fn {_flag, key} -> Util.truthy(opts[key]) end)
 
     extras = split_flags(opts[:flags])
     excludes = List.wrap(opts[:exclude] || [".DS_Store"])
@@ -111,12 +113,6 @@ defmodule Snapshot.Rsync do
 
     Enum.uniq(plain) ++ Enum.flat_map(excludes, &["--exclude", to_string(&1)])
   end
-
-  # Any value other than `false`/`nil` counts as set, so a `false` can never
-  # reach here and raise a FunctionClauseError (the old `maybe/3` bug).
-  defp truthy?(false), do: false
-  defp truthy?(nil), do: false
-  defp truthy?(_), do: true
 
   defp split_flags(nil), do: []
   defp split_flags(flags) when is_binary(flags), do: String.split(flags, ~r/\s+/, trim: true)
