@@ -99,7 +99,10 @@ defmodule Snapshot.Runner do
   end
 
   defp stream_batches(src, workers, retries) do
-    total_files = count_files(src)
+    # Scan once and collect to list so we know the total without a separate
+    # pass. The list is held in memory for the duration of the sync.
+    all_files = Enum.to_list(Scanner.scan(src))
+    total_files = length(all_files)
 
     if total_files == 0 do
       Util.warn("no regular files found under #{src}")
@@ -108,7 +111,7 @@ defmodule Snapshot.Runner do
       Util.info("Found #{total_files} files; syncing with #{length(workers)} workers...")
 
       {batch_count, sent, failures} =
-        Scanner.scan(src)
+        all_files
         |> Stream.chunk_every(@batch_size)
         |> Enum.reduce({0, 0, []}, fn batch, {n, sent, failures} ->
           worker = Enum.at(workers, rem(n, length(workers)))
@@ -132,8 +135,6 @@ defmodule Snapshot.Runner do
       {batch_count, sent, Enum.reverse(failures)}
     end
   end
-
-  defp count_files(src), do: src |> Scanner.scan() |> Enum.count()
 
   defp report_progress(sent, total) do
     percent = if total > 0, do: Float.round(sent / total * 100, 1), else: 0.0
