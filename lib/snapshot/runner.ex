@@ -15,44 +15,55 @@ defmodule Snapshot.Runner do
   @spec run(String.t(), String.t(), pos_integer(), non_neg_integer(), opts()) :: no_return()
   def run(src, dst, workers, retries, opts) do
     with :ok <- Util.check(File.dir?(src), "Source directory missing", 2),
-         :ok <- Util.check(File.dir?(dst), "Destination missing", 3),
-         {:ok, started} <- start_workers(src, dst, workers, opts) do
-      {batch_count, file_count, failures} = stream_batches(src, started, retries)
-
-      # Finish workers and collect each real rsync exit code.
-      results = Enum.map(started, &RsyncWorker.finish/1)
-      codes = Enum.zip_with(results, 1..length(results), &{&1, &2})
-
-      print_summary(batch_count, file_count)
-
-      # Sweeping is opt-in. It only runs after a fully successful sync --
-      # deleting after a partial or failed transfer would remove destination
-      # entries whose source copies never arrived.
-      if Util.truthy(opts[:delete]) and failures == [] and Enum.all?(results, &match?({:ok, 0}, &1)) do
+         :ok <- Util.check(File.dir?(dst), "Destination missing", 3) do
+      if Util.truthy(opts[:delete]) and Util.truthy(opts[:dry_run]) do
+        # When both --delete and --dry-run are set, we are in pure preview mode:
+        # the sync phase would transfer every file through rsync just to confirm
+        # what already matches. Skip it entirely and go straight to the sweep,
+        # which performs its own rsync dry run to find stale entries.
+        Util.info("Preview mode: checking source and sweeping destination without transfer...")
         sweep(src, dst, opts)
-      end
+      else
+        case start_workers(src, dst, workers, opts) do
+          {:ok, started} ->
+            {batch_count, file_count, failures} = stream_batches(src, started, retries)
 
-      case failures do
-        [] ->
-          if Enum.all?(results, &match?({:ok, 0}, &1)) do
-            Util.success("all sync jobs finished")
-          else
-            report_nonzero_exits(codes)
-            System.halt(4)
-          end
+            # Finish workers and collect each real rsync exit code.
+            results = Enum.map(started, &RsyncWorker.finish/1)
+            codes = Enum.zip_with(results, 1..length(results), &{&1, &2})
 
-        failed ->
-          Util.error("#{length(failed)} of #{batch_count} batches failed")
-          System.halt(5)
+            print_summary(batch_count, file_count)
+
+            # Sweeping is opt-in. It only runs after a fully successful sync --
+            # deleting after a partial or failed transfer would remove destination
+            # entries whose source copies never arrived.
+            if Util.truthy(opts[:delete]) and failures == [] and Enum.all?(results, &match?({:ok, 0}, &1)) do
+              sweep(src, dst, opts)
+            end
+
+            case failures do
+              [] ->
+                if Enum.all?(results, &match?({:ok, 0}, &1)) do
+                  Util.success("all sync jobs finished")
+                else
+                  report_nonzero_exits(codes)
+                  System.halt(4)
+                end
+
+              failed ->
+                Util.error("#{length(failed)} of #{batch_count} batches failed")
+                System.halt(5)
+            end
+
+          {:error, msg} ->
+            Util.error(msg)
+            System.halt(6)
+        end
       end
     else
       {:error, msg, code} ->
         Util.error(msg)
         System.halt(code)
-
-      {:error, msg} ->
-        Util.error(msg)
-        System.halt(6)
     end
   end
 
