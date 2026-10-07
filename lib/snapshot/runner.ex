@@ -108,6 +108,9 @@ defmodule Snapshot.Runner do
       Util.warn("no regular files found under #{src}")
       {0, 0, []}
     else
+      # Report progress as we scan, since scanning is the slowest part.
+      Util.info("Scanning #{src} for files...")
+      total_batches = ceil(total_files / @batch_size)
       Util.info("Found #{total_files} files; syncing with #{length(workers)} workers...")
 
       {batch_count, sent, failures} =
@@ -120,7 +123,7 @@ defmodule Snapshot.Runner do
             Retry.attempt(fn -> RsyncWorker.send_batch(worker, batch) end, retries)
 
           sent = sent + length(batch)
-          report_progress(sent, total_files)
+          report_progress(n + 1, total_batches, sent, total_files)
 
           case result do
             :ok ->
@@ -136,9 +139,9 @@ defmodule Snapshot.Runner do
     end
   end
 
-  defp report_progress(sent, total) do
-    percent = if total > 0, do: Float.round(sent / total * 100, 1), else: 0.0
-    IO.write("\r#{sent}/#{total} files (#{percent}%)")
+  defp report_progress(batch_idx, total_batches, sent, total_files) do
+    percent = if total_files > 0, do: Float.round(sent / total_files * 100, 1), else: 0.0
+    IO.write("\rBatch #{batch_idx}/#{total_batches} | #{sent}/#{total_files} files (#{percent}%)")
   end
 
   defp print_summary(batch_count, file_count) do
