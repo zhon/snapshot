@@ -4,13 +4,30 @@ defmodule Snapshot.Util do
   @yellow IO.ANSI.yellow()
   @reset IO.ANSI.reset()
 
-  def info(msg), do: IO.puts("#{@green}#{msg}#{@reset}")
-  def success(msg), do: IO.puts("#{@green}#{msg}#{@reset}")
-  def warn(msg), do: IO.puts("#{@yellow}#{msg}#{@reset}")
-  def error(msg), do: IO.puts(:stderr, "#{@red}#{msg}#{@reset}")
+  def info(msg) do
+    unless Process.get(:snapshot_quiet) do
+      IO.puts("#{@green}#{msg}#{@reset}")
+    end
+  end
+
+  def success(msg) do
+    unless Process.get(:snapshot_quiet) do
+      IO.puts("#{@green}#{msg}#{@reset}")
+    end
+  end
+
+  def warn(msg) do
+    IO.puts("#{@yellow}#{msg}#{@reset}")
+  end
+
+  def error(msg) do
+    IO.puts(:stderr, "#{@red}#{msg}#{@reset}")
+  end
 
   def progress(line) do
-    IO.write("\r#{@yellow}#{line}#{@reset}")
+    unless Process.get(:snapshot_quiet) do
+      IO.write("\r#{@yellow}#{line}#{@reset}")
+    end
   end
 
   def check(true, _, _), do: :ok

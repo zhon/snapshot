@@ -145,14 +145,17 @@ defmodule Snapshot.Runner do
           end
         end)
 
-      IO.puts("")
+      unless Process.get(:snapshot_quiet) do
+        IO.puts("")
+      end
+
       {batch_count, sent, Enum.reverse(failures)}
     end
   end
 
   defp report_progress(batch_idx, total_batches, sent, total_files) do
     percent = if total_files > 0, do: Float.round(sent / total_files * 100, 1), else: 0.0
-    IO.write("\rBatch #{batch_idx}/#{total_batches} | #{sent}/#{total_files} files (#{percent}%)")
+    Util.progress("\rBatch #{batch_idx}/#{total_batches} | #{sent}/#{total_files} files (#{percent}%)")
   end
 
   defp print_summary(batch_count, file_count) do

@@ -12,9 +12,10 @@ defmodule Snapshot.CLI do
           exclude: :keep,
           flags: :string,
           rsync_path: :string,
+          quiet: :boolean,
           help: :boolean
         ],
-        aliases: [w: :workers, h: :help, n: :dry_run]
+        aliases: [w: :workers, h: :help, n: :dry_run, q: :quiet]
       )
 
     if opts[:help] do
@@ -27,6 +28,9 @@ defmodule Snapshot.CLI do
       usage()
     end
 
+    if Util.truthy(opts[:quiet]) do
+      Process.put(:snapshot_quiet, true)
+    end
     workers = max(opts[:workers] || 11, 1)
     retries = max(opts[:retries] || 2, 0)
 
@@ -56,6 +60,7 @@ defmodule Snapshot.CLI do
           --exclude PATTERN  repeatable; defaults to .DS_Store
           --flags "..."      extra raw rsync flags
           --rsync-path PATH  explicit rsync binary (must be rsync 3.x)
+          -q --quiet          suppress informational output (keeps errors/warnings)
           -h --help
     """)
 
